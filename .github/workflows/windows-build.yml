@@ -1,13 +1,42 @@
 name: Windows Build
+
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Clone third-party dependencies
+        run: |
+          echo "📦 Cloning dependencies..."
+          mkdir thirdparty
+          cd thirdparty
+          git clone --depth=1 --branch docking https://github.com/ocornut/imgui.git
+          git clone --depth=1 https://github.com/NVIDIA/nvapi.git
+          echo "✅ ImGui and NVAPI SDK cloned successfully."
+          cd ..
+
+      - name: Verify third-party source
+        run: |
+          echo "🔍 Listing cloned files..."
+          dir thirdparty\imgui
+          dir thirdparty\nvapi
+
       - name: Configure CMake
-        run: cmake -S . -B build
+        run: cmake -S . -B build -A x64
+
       - name: Build
         run: cmake --build build --config Release
+
+      - name: Upload EXE Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: OCvidia-Windows
+          path: build/Release/*.exe
