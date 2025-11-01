@@ -11,23 +11,20 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Clone third-party dependencies
+      - name: Verify external dependencies
         run: |
-          echo "📦 Cloning dependencies..."
-          mkdir thirdparty
-          cd thirdparty
-          git clone --depth=1 --branch docking https://github.com/ocornut/imgui.git
-          git clone --depth=1 https://github.com/NVIDIA/nvapi.git
-          echo "✅ ImGui and NVAPI SDK cloned successfully."
-          cd ..
-
-      - name: Verify third-party source
-        run: |
-          echo "🔍 Listing cloned files..."
-          dir thirdparty\imgui
-          dir thirdparty\nvapi
+          echo "🔍 Checking ImGui and NVAPI folders..."
+          if not exist thirdparty\imgui (
+            echo "❌ Missing thirdparty/imgui"
+            exit /b 1
+          )
+          if not exist thirdparty\nvapi (
+            echo "❌ Missing thirdparty/nvapi"
+            exit /b 1
+          )
+          echo "✅ Found both dependencies."
 
       - name: Configure CMake
         run: cmake -S . -B build -A x64
@@ -35,8 +32,10 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Upload EXE Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Built EXE
+        uses: actions/upload-artifact@v4
         with:
           name: OCvidia-Windows
           path: build/Release/*.exe
+          compression-level: 6
+          if-no-files-found: error
